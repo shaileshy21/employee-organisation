@@ -22,6 +22,13 @@ public class EmployeeService {
 
     private final Map<Integer, Employee> employees = new HashMap<>();
 
+    /**
+     * Method to load data from csv file into employees map
+     * first load data into map
+     * then create hierarchy by adding subordinated
+     *
+     * @param filePath path of csv file
+     */
     public void loadDataFromFile(String filePath) {
 
         log.info("Loading data from CSV File...");
@@ -41,6 +48,11 @@ public class EmployeeService {
         }
     }
 
+    /**
+     * method to insert csv record into map
+     *
+     * @param record CSV record read from the file
+     */
     private void addEmployee(CSVRecord record) {
         try {
             var id = Integer.parseInt(record.get("Id"));
@@ -67,6 +79,12 @@ public class EmployeeService {
         }
     }
 
+    /**
+     * build the hierarchy of the employees
+     * employee with no managerId will be the CEO;
+     * employees having their managerId X will be added
+     * as subordinates for the employee having ID as X
+     */
     private void buildHierarchyMap() {
         for (var emp : employees.values()) {
             var managerId = emp.getManagerId();
@@ -83,6 +101,9 @@ public class EmployeeService {
         }
     }
 
+    /**
+     * analyse the read data from the file
+     */
     public void analyzeData() {
         log.info("Analyzing salary violations...");
         employees.values().stream()
@@ -90,17 +111,22 @@ public class EmployeeService {
                 .forEach(this::analyzeSalary);
 
         log.info("Analyzing reporting depth...");
-        employees.values().forEach(this::checkReportingDepth);
+        employees.values().forEach(this::checkReportingDepthLevel);
     }
 
+    /**
+     * method to analyse the salaries of each manager
+     *
+     * @param manager Manager Employee
+     */
     private void analyzeSalary(Employee manager) {
         List<Employee> subs = manager.getSubordinates();
         if (subs.isEmpty()) return;
 
-        BigDecimal total = BigDecimal.ZERO;
-        for (Employee sub : subs) {
-            total = total.add(sub.getSalary());
-        }
+        // calculate totalSalary of all the subOrdinates
+        BigDecimal total = subs.stream()
+                .map(Employee::getSalary)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         int count = subs.size();
         BigDecimal avg = total.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
@@ -117,7 +143,12 @@ public class EmployeeService {
         }
     }
 
-    private void checkReportingDepth(Employee emp) {
+    /**
+     * method to count the depth levels of each employee
+     *
+     * @param emp employee
+     */
+    private void checkReportingDepthLevel(Employee emp) {
         int depth = 0;
         Integer managerId = emp.getManagerId();
 
@@ -134,6 +165,11 @@ public class EmployeeService {
         }
     }
 
+    /**
+     * method to get the employees map
+     *
+     * @return employee map
+     */
     public Map<Integer, Employee> getEmployeesMap() {
         return employees;
     }
